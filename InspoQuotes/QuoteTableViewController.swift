@@ -7,9 +7,10 @@
 //
 
 import UIKit
+import StoreKit
 
-class QuoteTableViewController: UITableViewController {
-    
+class QuoteTableViewController: UITableViewController, SKPaymentTransactionObserver {
+    let productID = "com.londonappbrewery.InspoQuotes.PremiumQuotes"
     var quotesToShow = [
         "Our greatest glory is not in never falling, but in rising every time we fall. — Confucius",
         "All our dreams can come true, if we have the courage to pursue them. – Walt Disney",
@@ -30,6 +31,7 @@ class QuoteTableViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        SKPaymentQueue.default().add(self)
     }
     
     // MARK: - Table view data source
@@ -49,11 +51,49 @@ class QuoteTableViewController: UITableViewController {
             cell.backgroundColor = #colorLiteral(red: 0.05882352963, green: 0.180392161, blue: 0.2470588237, alpha: 1)
             cell.textLabel?.textColor = #colorLiteral(red: 0.4745098054, green: 0.8392156959, blue: 0.9764705896, alpha: 1)
             cell.accessoryType = .disclosureIndicator
-        
         }
         return cell
     }
     
+    //MARK: - tableview delegate method
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if indexPath.row == quotesToShow.count {
+            buyPremiumQuotes()
+        }
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    //MARK: - in app purchases
+    
+    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+        for transaction in transactions {
+            if transaction.transactionState == .purchased{
+                print("success $$$$")
+                // relase transaction from Queue
+                SKPaymentQueue.default().finishTransaction(transaction)
+            } else if transaction.transactionState == .failed {
+                print("failure")
+                if let error = transaction.error {
+                    let errorDescription = error.localizedDescription
+                    print("transaction failed, reason: \(errorDescription)")
+                }
+                SKPaymentQueue.default().finishTransaction(transaction)
+            }
+        }
+    }
+    
+    func buyPremiumQuotes(){
+        // check if we can make payment on this phone
+        if SKPaymentQueue.canMakePayments() {
+            let paymentRequest = SKMutablePayment()
+            // tell which product am i reffering to
+            paymentRequest.productIdentifier = productID
+            // add this request
+            SKPaymentQueue.default().add(paymentRequest)
+            
+        }
+    }
     
     @IBAction func restorePressed(_ sender: UIBarButtonItem) {
         
