@@ -32,6 +32,9 @@ class QuoteTableViewController: UITableViewController, SKPaymentTransactionObser
     override func viewDidLoad() {
         super.viewDidLoad()
         SKPaymentQueue.default().add(self)
+        if isPurchased() {
+            quotesToShow.append(contentsOf: premiumQuotes)
+        }
     }
     
     // MARK: - Table view data source
@@ -72,12 +75,20 @@ class QuoteTableViewController: UITableViewController, SKPaymentTransactionObser
                 print("success $$$$")
                 // relase transaction from Queue
                 SKPaymentQueue.default().finishTransaction(transaction)
+                // show premium quotes
+                showPremiumQuotes()
+                // store it on Plist
+                UserDefaults.standard.set(true, forKey: productID)
             } else if transaction.transactionState == .failed {
                 print("failure")
                 if let error = transaction.error {
                     let errorDescription = error.localizedDescription
                     print("transaction failed, reason: \(errorDescription)")
                 }
+                SKPaymentQueue.default().finishTransaction(transaction)
+            } else if transaction.transactionState == .restored {
+                showPremiumQuotes()
+                print("restored")
                 SKPaymentQueue.default().finishTransaction(transaction)
             }
         }
@@ -91,12 +102,20 @@ class QuoteTableViewController: UITableViewController, SKPaymentTransactionObser
             paymentRequest.productIdentifier = productID
             // add this request
             SKPaymentQueue.default().add(paymentRequest)
-            
         }
     }
     
+    func showPremiumQuotes(){
+        quotesToShow.append(contentsOf: premiumQuotes)
+        tableView.reloadData()
+    }
+    
+    func isPurchased() -> Bool {
+        return UserDefaults.standard.bool(forKey: productID)
+    }
+    
     @IBAction func restorePressed(_ sender: UIBarButtonItem) {
-        
+        SKPaymentQueue.default().restoreCompletedTransactions()
     }
     
     
